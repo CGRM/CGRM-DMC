@@ -14,13 +14,13 @@ All these files collected in one day folder named as YYYYMMDD
 """
 from obspy import UTCDateTime
 import datetime as dt
-import datetime as dt
 import glob
 from obspy import read
 from obspy import Stream
 import os
 from obspy.io.sac import SACTrace
-import time
+import multiprocessing as mp
+import itertools as it
 # load events catalog
 def load_catalog(Data_dir="./Data", Catalog_dirname="./events.csv"):
     """
@@ -34,12 +34,13 @@ def load_catalog(Data_dir="./Data", Catalog_dirname="./events.csv"):
     @Catalogs: list    ;list of dictionary which contain starttime, latitude,
                         longitude, depth, magnitude
     """
-    Catalog_file = open(Catalog_dirname)
-    lines = Catalog_file.readlines()
+
+    with open(Catalog_dirname) as f:
+        lines = f.readlines()
 
     Catalogs = []
     for line in lines:
-        starttime, latitude, longitude, depth, magnitude = ("".join(line)).split()[0:5]
+        starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
         Catalog = {"starttime":starttime, "latitude":latitude, "longitude":longitude,
                     "depth":depth, "magnitude":magnitude}
         Catalogs.append(Catalog)
@@ -57,16 +58,19 @@ def load_stationinfo(stationinfo_dirname):
         stationinfo_dirname = raw_input("Please input file location:\n")
 
     # init file object
-    info_file = open(stationinfo_dirname)
-    lines = info_file.readlines()
-    stationinfo_list=[]
+    with open(stationinfo_dirname) as f:
+        lines = f.readlines()
+
+    stationinfo = {}
     for line in lines:
-        net, sta, loc, cha = (("".join(line).split())[0]).split(".")[-6:-2]
-        stla, stlo, stel, stdp, cmpaz, cmpinc = "".join(line).split()[-6:]
-        stationinfo = {"net":net, "sta":sta, "loc":loc, "cha":cha, "stla":stla,
-          "stlo":stlo, "stel":stel, "stdp":stdp, "cmpaz":cmpaz, "cmpinc":cmpinc}
-        stationinfo_list.append(stationinfo)
-    return stationinfo_list
+
+        net, sta, loc, cha = (("".join(line).split())[0]).split(".")[-4:]
+        stla, stlo, stel, stdp, cmpaz, cmpinc = line.split()[-6:]
+        key = ".".join([net, sta, cha[-1]])
+        value = {"stla":stla,"stlo":stlo, "stel":stel, "stdp":stdp, "cmpaz":cmpaz,
+                                                                "cmpinc":cmpinc}
+        stationinfo[key] = value
+    return stationinfo
 
 
 # Obtain data folder name
@@ -181,9 +185,9 @@ def Scan_stations(Data_dir,folder_name):
     return startfolder_stations_list, endfolder_stations_list
 
 # trim data and return waveform
-def trim_waveform(Data_dir, event, stationinfo_dirname, UTCEvent, End_UTCEvent,
+def trim_waveform(Data_dir, event, stationinfo, UTCEvent, End_UTCEvent,
                     folder_name, startfolder_stations_list, endfolder_stations_list,
-                                                                verbose=True):
+                                                        output_dir,verbose=True):
     """
     trim waveform for particular event
 
@@ -194,6 +198,7 @@ def trim_waveform(Data_dir, event, stationinfo_dirname, UTCEvent, End_UTCEvent,
     @startfolder_stations_list   ;list of stations dictionary in begintime folder
     @endfolder_stations_list     ;list of stations dictionary in endtime folder
     @waveform: Stream            ;Stream of event waveform
+    @output_dir:string          ;dirname of event data
     """
     # return none if stations_list is empty
     if not startfolder_stations_list:
@@ -201,25 +206,25 @@ def trim_waveform(Data_dir, event, stationinfo_dirname, UTCEvent, End_UTCEvent,
     if not endfolder_stations_list:
         return None
 
-    # load stationinfo file
-    stationinfo_list = load_stationinfo(stationinfo_dirname)
 
     # obtain event waveform
     if startfolder_stations_list == endfolder_stations_list:
         if verbose:
             print "Event didn't cross days"
-        waveform = trim_oneday(Data_dir, event, stationinfo_list,UTCEvent, End_UTCEvent,
-                              folder_name,startfolder_stations_list,verbose=True)
+        waveform = trim_oneday(Data_dir, event, stationinfo,UTCEvent, End_UTCEvent,
+                              folder_name,startfolder_stations_list,output_dir,
+                                                                verbose=True)
     else:
         if verbose:
             print  "Event crossed days"
-        waveform=trim_crossdays(Data_dir, event, stationinfo_list, UTCEvent, End_UTCEvent,
+        waveform=trim_crossdays(Data_dir, event, stationinfo, UTCEvent, End_UTCEvent,
                     folder_name,startfolder_stations_list, endfolder_stations_list,
-                                                                verbose=True)
+                                                    output_dir, verbose=True)
 
 
-def trim_crossdays(Data_dir, event, stationinfo_list, UTCEvent, End_UTCEvent, folder_name,
-            startfolder_stations_list, endfolder_stations_list, verbose=True):
+def trim_crossdays(Data_dir, event, stationinfo, UTCEvent, End_UTCEvent,
+                folder_name ,startfolder_stations_list, endfolder_stations_list,
+                                                        output_dir,verbose=True):
     """
     trim waveform if event don't cross days
 
@@ -229,11 +234,20 @@ def trim_crossdays(Data_dir, event, stationinfo_list, UTCEvent, End_UTCEvent, fo
     @startfolder_stations_list:list ;list of stations dictionary in begintime folder
     @waveform:Stream  ;trimed waveform
     @stationinfo_list: list     ;list of station info
+    @output_dir:string          ;dirname of event data
     """
     # initialization of waveform_start and waveform_end
     waveform_start = Stream()
     waveform_end = Stream()
     for stationA in startfolder_stations_list:
+
+        #check if this work has been done?
+        if os.path.exists(output_dir+"*."+stationA["net"]+"."+stationA["sta"]+
+                "*"+stationA["cha"][-1]):
+            print "Notif: File of {}.{}.{} exist skiping".format(stationA["net"]
+                    ,stationA["sta"],stationA["cha"])
+            return
+
         filename_start = ".".join([stationA["net"], stationA["sta"], stationA["loc"],
                                     stationA["cha"], stationA["btime"], "mseed"])
         dirname_start = Data_dir + folder_name[0] + filename_start
@@ -260,13 +274,15 @@ def trim_crossdays(Data_dir, event, stationinfo_list, UTCEvent, End_UTCEvent, fo
         #todo: write data as SAC format
         if not waveform:
             continue
-        writeSAC(waveform, event, folder_name, UTCEvent, stationA, stationinfo_list)
+        writeSAC(waveform, event, folder_name, UTCEvent, stationA,
+                                                    stationinfo,output_dir)
 
 
 
 
-def trim_oneday(Data_dir, event, stationinfo_list,  UTCEvent, End_UTCEvent, folder_name,
-                                        startfolder_stations_list,verbose=True):
+def trim_oneday(Data_dir, event, stationinfo,  UTCEvent, End_UTCEvent, folder_name,
+                                        startfolder_stations_list,output_dir,
+                                                                verbose=True):
     """
     trim waveform if event don't cross days
 
@@ -275,9 +291,17 @@ def trim_oneday(Data_dir, event, stationinfo_list,  UTCEvent, End_UTCEvent, fold
     @End_UTCEvent: UTCDateTime   ;UTC time when the event end
     @startfolder_stations_list:list ;list of stations dictionary in begintime folder
     @waveform:Stream  ;trimed waveform
+    @output_dir:string          ;dirname of event data
     @stationinfo_list: list     ;list of station info
     """
     for station in startfolder_stations_list:
+        #check if this work has been done?
+        if os.path.exists(output_dir+"*."+station["net"]+"."+station["sta"]+
+                "*"+station["cha"][-1]):
+            print "Notif: File of {}.{}.{} exist skiping".format(station["net"]
+                    ,station["sta"],station["cha"])
+            return
+
         filename = ".".join([station["net"], station["sta"], station["loc"],
                                     station["cha"], station["btime"], "mseed"])
         dirname = Data_dir + folder_name[0] + filename
@@ -288,12 +312,14 @@ def trim_oneday(Data_dir, event, stationinfo_list,  UTCEvent, End_UTCEvent, fold
         waveform = read(dirname, starttime=UTCEvent, endtime=End_UTCEvent)
         if not waveform:
             continue
-        writeSAC(waveform, event, folder_name, UTCEvent, station, stationinfo_list)
+        writeSAC(waveform, event, folder_name, UTCEvent, station, stationinfo,
+                                                                output_dir)
 
 
 
 
-def writeSAC(waveform, event, folder_name, UTCEvent, station, stationinfo_list):
+def writeSAC(waveform, event, folder_name, UTCEvent, station, stationinfo,
+                                                                output_dir):
     """
     function used to write data with SAC format
 
@@ -301,85 +327,117 @@ def writeSAC(waveform, event, folder_name, UTCEvent, station, stationinfo_list):
     @waveform: Stream           ;Stream of event waveform
     @station: dict              ;station dictionary
     @stationinfo_list: list     ;list of station info
+    @output_dir:string          ;dirname of event data
     """
     Match = False
     # The waveform may is constructed by several traces-- merge them
     waveform.merge(fill_value=0)
     Trace = waveform[0]
-    for station_info in stationinfo_list:
-        Match  = (station["net"]==station_info["net"])
-        Match *= (station["sta"]==station_info["sta"])
-        Match *= (station["loc"]==station_info["loc"])
-        Match *= (station["cha"]==station_info["cha"])
-        if Match:
-            # transfer obspy trace to sac trace
-            sac_trace_init = SACTrace()
-            sac_trace = sac_trace_init.from_obspy_trace(trace=Trace)
+    key = ".".join([Trace.stats.network, Trace.stats.station,Trace.stats.channel[-1]])
 
-            # change some headers about station
-            sac_trace.stla = float(station_info["stla"])
-            sac_trace.stlo = float(station_info["stlo"])
-            sac_trace.stel = float(station_info["stel"])
-            sac_trace.stdp = float(station_info["stdp"])
-            sac_trace.cmpaz = float(station_info["cmpaz"])
-            sac_trace.cmpinc = float(station_info["cmpinc"])
-
-            # change some headers about event
-            sac_trace.evla = float(event["latitude"])
-            sac_trace.evlo = float(event["longitude"])
-            sac_trace.evdp = float(event["depth"])
-            sac_trace.mag = float(event["magnitude"])
-            # change reference time
-            sac_trace.nzyear = UTCEvent.year
-            sac_trace.nzjday = UTCEvent.julday
-            sac_trace.nzhour = UTCEvent.hour
-            sac_trace.nzmin = UTCEvent.minute
-            sac_trace.nzsec = UTCEvent.second
-            sac_trace.nzmsec = UTCEvent.microsecond/1000
-            sac_trace.o   = 0
-
-            # SAC file lodation
-            YY_str =  "{:0>4d}".format(UTCEvent.year)
-            MN_str =  "{:0>2d}".format(UTCEvent.month)
-            Dy_str =  "{:0>2d}".format(UTCEvent.day)
-            jd_str =  "{:0>3d}".format(UTCEvent.julday)
-            HH_str =  "{:0>2d}".format(UTCEvent.hour)
-            mm_str =  "{:0>2d}".format(UTCEvent.minute)
-            SS_str =  "{:0>2d}".format(UTCEvent.second)
-
-            sub_folder_name = YY_str + MN_str + Dy_str + HH_str + mm_str + SS_str
-            sac_location = "../Event_data/" + sub_folder_name + "/"
-            if not os.path.exists(sac_location):
-                os.mkdir(sac_location)
-            SAC_filename_list = [YY_str, jd_str, HH_str, mm_str, SS_str, "0000"]
-            SAC_filename_list+= [str(sac_trace.knetwk), str(sac_trace.kstnm),
-                    "00", str(sac_trace.kcmpnm),"M","SAC"]
-            SAC_filename_str = ".".join(SAC_filename_list)
-            SAC_Pathname = sac_location + SAC_filename_str
-            sac_trace.write(SAC_Pathname)
-            break
-    if not Match:
-        print "No info for station-{}".format(station_info["sta"])
+    # write missed station info into miss_station.list
+    if not stationinfo.has_key(key):
+        print "Warning: No Station info fromr {}".format(key)
+        with open(output_dir+"/missed_station.info","w+") as f:
+            f.write(key)
 
 
-Data_dir = "/run/media/seispider/Seagate Backup Plus Drive/"
-Catalog_dirname = "../test.csv"
-stationinfo_dirname = "../stations.list"
-# load catalog file
-Catalogs = load_catalog(Data_dir=Data_dir, Catalog_dirname=Catalog_dirname)
-for event in Catalogs:
+        return
+    # transfer obspy trace to sac trace
+    sac_trace_init = SACTrace()
+    sac_trace = sac_trace_init.from_obspy_trace(trace=Trace)
+
+    # change some headers about station
+    sac_trace.stla = float(stationinfo[key]["stla"])
+    sac_trace.stlo = float(stationinfo[key]["stlo"])
+    sac_trace.stel = float(stationinfo[key]["stel"])
+    sac_trace.stdp = float(stationinfo[key]["stdp"])
+    sac_trace.cmpaz = float(stationinfo[key]["cmpaz"])
+    sac_trace.cmpinc = float(stationinfo[key]["cmpinc"])
+
+    # change some headers about event
+    sac_trace.evla = float(event["latitude"])
+    sac_trace.evlo = float(event["longitude"])
+    sac_trace.evdp = float(event["depth"])
+    sac_trace.mag = float(event["magnitude"])
+    # change reference time
+    sac_trace.nzyear = UTCEvent.year
+    sac_trace.nzjday = UTCEvent.julday
+    sac_trace.nzhour = UTCEvent.hour
+    sac_trace.nzmin = UTCEvent.minute
+    sac_trace.nzsec = UTCEvent.second
+    sac_trace.nzmsec = UTCEvent.microsecond/1000
+    sac_trace.o   = 0
+
+    # SAC file lodation
+    YY_str =  "{:0>4d}".format(UTCEvent.year)
+    MN_str =  "{:0>2d}".format(UTCEvent.month)
+    Dy_str =  "{:0>2d}".format(UTCEvent.day)
+    jd_str =  "{:0>3d}".format(UTCEvent.julday)
+    HH_str =  "{:0>2d}".format(UTCEvent.hour)
+    mm_str =  "{:0>2d}".format(UTCEvent.minute)
+    SS_str =  "{:0>2d}".format(UTCEvent.second)
+
+    sub_folder_name = YY_str + MN_str + Dy_str + HH_str + mm_str + SS_str
+    sac_location = output_dir + sub_folder_name + "/"
+    if not os.path.exists(sac_location):
+        os.mkdir(sac_location)
+    SAC_filename_list = [YY_str, jd_str, HH_str, mm_str, SS_str, "0000"]
+    SAC_filename_list+= [str(sac_trace.knetwk), str(sac_trace.kstnm),
+                      "00", str(sac_trace.kcmpnm),"M","SAC"]
+    SAC_filename_str = ".".join(SAC_filename_list)
+    SAC_Pathname = sac_location + SAC_filename_str
+    sac_trace.write(SAC_Pathname)
+
+
+def Tri_ms2SAC((event, stationinfo, Data_dir, output_dir)):
+    """
+    Function used to process particular event
+
+    @event: dict    ;dict concluding serevral important info of particular event
+    @stationinfo: dict   ;dict concluding station information
+    @Data_dir: string  ;The dirname of mseed data
+    @output_dir: string ; The dirname of trimed event data(SAC format)
+    """
     # obtain folder name
     UTCEvent, End_UTCEvent, folder_name = starttime_endtime_folder(event["starttime"])
-    print folder_name
     # obtain stations in two folders
     startfolder_stations_list,endfolder_stations_list = Scan_stations(Data_dir,
                                                                     folder_name)
     # obtain waveform
-    trim_waveform(Data_dir, event, stationinfo_dirname, UTCEvent, End_UTCEvent,
-        folder_name,startfolder_stations_list, endfolder_stations_list, verbose=True)
+    trim_waveform(Data_dir, event, stationinfo, UTCEvent, End_UTCEvent,
+        folder_name,startfolder_stations_list, endfolder_stations_list,output_dir,
+                                                                verbose=True)
 
 
+Data_dir = "/run/media/seispider/Seagate Backup Plus Drive/"
+Catalog_dirname = "../bg6.5.csv"
+stationinfo_dirname = "../station.all.info"
+output_dir = "/run/media/seispider/Seagate Backup Plus Drive1/"
 
+# load catalog file
+Catalogs = load_catalog(Data_dir=Data_dir, Catalog_dirname=Catalog_dirname)
+# load stationinfo file
+stationinfo = load_stationinfo(stationinfo_dirname)
 
+MULTIPROCESS = True      # if True:  multiprocess turn on  else: turn of
+# how many concurrent processes? (set None to let multiprocessing module to decide)
+NB_PROCESSES = None
 
+# ==========================
+# multiple parameters for map
+# ==========================
+def universal_worker(input_pair):
+    function, args = input_pair
+    return function(*args)
+def pool_args(function, *args):
+    return zip(it.repeat(function), zip(*args))
+
+if MULTIPROCESS:
+    pool = mp.Pool(NB_PROCESSES)
+    pool.map(universal_worker, pool_args(Tri_ms2SAC, zip(Catalogs,
+        it.repeat(stationinfo), it.repeat(Data_dir), it.repeat(output_dir))))
+else:
+    for event in Catalogs:
+        Tri_ms2SAC(event, stationinfo, Data_dir. output_dir)
 
