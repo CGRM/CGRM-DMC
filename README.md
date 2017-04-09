@@ -8,4 +8,5 @@ It can obtain event data(SAC) from continues waveform(mseed).It can
 also write the event infos(time,location,magnitude) and station infos(location etc)
 into SAC files.
 ### History
-20170408: verify the trimed result and chunk events multiprocessing  
+20170408: verify the trimed result and chunk events multiprocessing
+20170409: solve exception caused by sampling rate change  
