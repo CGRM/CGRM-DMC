@@ -245,11 +245,9 @@ def read_catalog(catalog):
     return events
 
 if __name__ == '__main__':
-    client = Client(
-        "../station.info.norm",
-        "/run/media/seispider/Seagate Backup Plus Drive/",
-        "../test/"
-    )
+    client = Client(stationinfo="../station.info.norm",
+                    mseeddir="/run/media/seispider/Seagate Backup Plus Drive/",
+                    sacdir="../test/")
     duration = 6000
 
     events = read_catalog("../bg6.5.csv")
