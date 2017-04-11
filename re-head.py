@@ -8,19 +8,15 @@ import subprocess as sp
 
 os.putenv("SAC_DISPLAY_COPYRIGHT", '0')
 
-if len(sys.argv) != 2:
-    print "Usage: python dirname"
+if len(sys.argv) == 1:
+    sys.exit("Usage: python dirname")
 
-p = sp.Popen(['sac'], stdin=sp.PIPE)
-drnm = sys.argv[1]
-fldnm_lst = glob.glob(os.path.join(drnm, "*"))
-s = ""
-for fldnm in fldnm_lst:
-    # call sac
-    flnm_lst = glob.glob(os.path.join(fldnm, "*.SAC"))
-    for flnm in flnm_lst:
-        s += "rh {}\n".format(flnm)
+for event in sys.argv[1:]:
+    p = sp.Popen(['sac'], stdin=sp.PIPE)
+    s = ""
+    filelist = glob.glob(os.path.join(fldnm, "*.SAC"))
+    for fname in filelist:
+        s += "rh {}\n".format(fname)
         s += "wh\n"
-s += "q\n"
-p.communicate(s.encode())
-
+    s += "q\n"
+    p.communicate(s.encode())
