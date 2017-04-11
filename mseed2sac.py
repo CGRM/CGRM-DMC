@@ -62,8 +62,12 @@ class Client(object):
             stla, stlo, stel, stdp = line.split()[-4:]
             key = ".".join([net, sta])
             value = {
-                "stla": stla, "stlo": stlo, "stel": stel,
-                "stdp": stdp, "sta": sta, "net": net
+                "net": net,
+                "sta": sta,
+                "stla": float(stla),
+                "stlo": float(stlo),
+                "stel": float(stel),
+                "stdp": float(stdp),
             }
             stations[key] = value
         return stations
@@ -154,10 +158,10 @@ class Client(object):
             sac_trace = sac_trace_init.from_obspy_trace(trace=Trace)
 
             # change some headers about station
-            sac_trace.stla = float(station[key]["stla"])
-            sac_trace.stlo = float(station[key]["stlo"])
-            sac_trace.stel = float(station[key]["stel"])
-            sac_trace.stdp = float(station[key]["stdp"])
+            sac_trace.stla = station[key]["stla"]
+            sac_trace.stlo = station[key]["stlo"]
+            sac_trace.stel = station[key]["stel"]
+            sac_trace.stdp = station[key]["stdp"]
 
             if Trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
@@ -170,10 +174,10 @@ class Client(object):
                 sac_trace.cmpinc = 0
 
             # change some headers about event
-            sac_trace.evla = float(event["latitude"])
-            sac_trace.evlo = float(event["longitude"])
-            sac_trace.evdp = float(event["depth"])
-            sac_trace.mag = float(event["magnitude"])
+            sac_trace.evla = event["latitude"]
+            sac_trace.evlo = event["longitude"]
+            sac_trace.evdp = event["depth"]
+            sac_trace.mag = event["magnitude"]
             # change reference time
             sac_trace.nzyear = utcevent.year
             sac_trace.nzjday = utcevent.julday
@@ -233,10 +237,10 @@ def read_catalog(catalog):
         starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
         event = {
             "starttime": starttime,
-            "latitude": latitude,
-            "longitude": longitude,
-            "depth": depth,
-            "magnitude": magnitude,
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "depth": float(depth),
+            "magnitude": float(magnitude),
         }
         events.append(event)
     return events
