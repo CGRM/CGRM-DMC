@@ -14,7 +14,7 @@ if len(sys.argv) == 1:
 for event in sys.argv[1:]:
     p = sp.Popen(['sac'], stdin=sp.PIPE)
     s = ""
-    filelist = glob.glob(os.path.join(fldnm, "*.SAC"))
+    filelist = glob.glob(os.path.join(event, "*.SAC"))
     for fname in filelist:
         s += "rh {}\n".format(fname)
         s += "wh\n"
