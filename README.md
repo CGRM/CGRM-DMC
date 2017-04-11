@@ -9,4 +9,5 @@ also write the event infos(time,location,magnitude) and station infos(location e
 into SAC files.
 ### History
 20170408: verify the trimed result and chunk events multiprocessing
-20170409: solve exception caused by sampling rate change  
+20170409: solve exception caused by sampling rate change
+20170411: With the help of seisman, SeisPider redesigned mseed2sac.py  
