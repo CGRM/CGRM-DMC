@@ -151,12 +151,14 @@ class Client(object):
             if Trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
                 sac_trace.cmpinc = 90
-            if Trace.stats.channel[-1] == "N":
+            elif Trace.stats.channel[-1] == "N":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 90
-            if Trace.stats.channel[-1] == "Z":
+            elif Trace.stats.channel[-1] == "Z":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 0
+            else:
+                logger.warn("Not E|N|Z component")
 
             # change some headers about event
             sac_trace.evla = event["latitude"]
