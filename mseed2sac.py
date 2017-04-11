@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 class Client(object):
     def __init__(self, stationinfo, mseeddir, sacdir):
-        self.catalog = catalog
         self.stationinfo = stationinfo
         self.mseeddir = mseeddir
         self.sacdir = sacdir
