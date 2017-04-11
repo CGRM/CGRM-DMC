@@ -43,7 +43,7 @@ class Client(object):
 
     def _read_stations(self):
         """
-        function used to load the station info.
+        Read station information from station metadata file.
 
         @stationinfo: dict     ;dict of station infos
         """
@@ -64,7 +64,7 @@ class Client(object):
 
     def _get_dirname(self, starttime, duration):
         """
-        function used to obtain the folder name
+        Get dirname based on event starttime.
 
         @starttime: str           ;starttime of event in UTC
         @duration: int            ;duration of trimming [Unit = second]
@@ -88,7 +88,7 @@ class Client(object):
 
     def _read_mseed(self, station, dirnames, starttime, duration):
         """
-        trim waveform for particular event
+        Trim waveform for particular event.
 
         """
         # return none if dirnames is empty
@@ -127,7 +127,7 @@ class Client(object):
 
     def _writesac(self, st, station, event):
         """
-        function used to write data with SAC format
+        Write data with SAC format with event and station information.
         """
         for i in range(len(st)):
             Trace = st[i]
