@@ -80,10 +80,8 @@ class Client(object):
         @duration: int            ;duration of trimming [Unit = second]
         @folder_name: list        ;The folder name
          """
-        # change string starttime to UTCDateTime
-        utcevent = UTCDateTime(starttime)
         # Change this UTC time to Beijing Time(BJT_Event)
-        bjt_event = utcevent + dt.timedelta(hours=8)
+        bjt_event = starttime + dt.timedelta(hours=8)
         # obtain end time of Beijing time zone
         end_bjt_event = bjt_event + duration
 
@@ -98,9 +96,9 @@ class Client(object):
             folder_name.append(bjt_event_str)
             folder_name.append(end_bjt_event_str)
 
-        return utcevent, folder_name
+        return folder_name
 
-    def _read_mseed(self, station, dirnames, utcevent, duration):
+    def _read_mseed(self, station, dirnames, starttime, duration):
         """
         trim waveform for particular event
 
@@ -136,10 +134,10 @@ class Client(object):
             msg = "Error in Reading {} !".format(station.keys()[0])
             logger.error(msg)
             return None
-        st.trim(utcevent, utcevent + duration)
+        st.trim(starttime, starttime + duration)
         return st
 
-    def writesac(self, st, station, event, utcevent):
+    def writesac(self, st, station, event):
         """
         function used to write data with SAC format
         """
@@ -179,21 +177,22 @@ class Client(object):
             sac_trace.evdp = event["depth"]
             sac_trace.mag = event["magnitude"]
             # change reference time
-            sac_trace.nzyear = utcevent.year
-            sac_trace.nzjday = utcevent.julday
-            sac_trace.nzhour = utcevent.hour
-            sac_trace.nzmin = utcevent.minute
-            sac_trace.nzsec = utcevent.second
-            sac_trace.nzmsec = utcevent.microsecond / 1000
+            starttime = event["starttime"]
+            sac_trace.nzyear = starttime.year
+            sac_trace.nzjday = starttime.julday
+            sac_trace.nzhour = starttime.hour
+            sac_trace.nzmin = starttime.minute
+            sac_trace.nzsec = starttime.second
+            sac_trace.nzmsec = starttime.microsecond / 1000
             sac_trace.o = 0
             sac_trace.iztype = 'io'
 
             # SAC file lodation
-            sub_fldr_nm = utcevent.strftime("%Y%m%d%H%M%S")
+            sub_fldr_nm = starttime.strftime("%Y%m%d%H%M%S")
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
-            sac_flnm = [utcevent.strftime("%Y.%j.%H.%M.%S")]
+            sac_flnm = [starttime.strftime("%Y.%j.%H.%M.%S")]
             sac_flnm += ["0000"]
             sac_flnm += [
                 str(sac_trace.knetwk), str(sac_trace.kstnm),
@@ -205,7 +204,7 @@ class Client(object):
         return
 
     def get_waveform(self, event, duration):
-        utcevent, dirnames = self._get_dirname(event["starttime"], duration)
+        dirnames = self._get_dirname(event["starttime"], duration)
         # check if folders exists
         for i in range(len(dirnames)):
             if not os.path.exists(os.path.join(self.mseeddir, dirnames[i])):
@@ -214,11 +213,11 @@ class Client(object):
                 return
         for key, value in self.stations.iteritems():    # loop over all stations
             station = {key: value}
-            st = self._read_mseed(station, dirnames, utcevent, duration)
+            st = self._read_mseed(station, dirnames, event["starttime"], duration)
             # Reading error
             if not st:
                 continue
-            self.writesac(st, station, event, utcevent)
+            self.writesac(st, station, event)
 
 
 def read_catalog(catalog):
@@ -236,7 +235,7 @@ def read_catalog(catalog):
     for line in lines:
         starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
         event = {
-            "starttime": starttime,
+            "starttime": UTCDateTime(starttime),
             "latitude": float(latitude),
             "longitude": float(longitude),
             "depth": float(depth),
