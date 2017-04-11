@@ -181,10 +181,10 @@ class Client(object):
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
-            sac_flnm_str = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
-                                     "0000", trace.id, "M", "SAC"])
-            sac_pathname = os.path.join(sac_loc, sac_flnm_str)
-            sac_trace.write(sac_pathname)
+            sac_flnm = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
+                                 "0000", trace.id, "M", "SAC"])
+            sac_fullname = os.path.join(sac_loc, sac_flnm)
+            sac_trace.write(sac_fullname)
         return
 
     def get_waveform(self, event, duration):
