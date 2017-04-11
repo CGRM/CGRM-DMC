@@ -34,40 +34,13 @@ logger = logging.getLogger(__name__)
 
 
 class Client(object):
-    def __init__(self, catalog, stationinfo, mseeddir, sacdir):
+    def __init__(self, stationinfo, mseeddir, sacdir):
         self.catalog = catalog
         self.stationinfo = stationinfo
         self.mseeddir = mseeddir
         self.sacdir = sacdir
 
-        self.events = self._read_catalog()
         self.stations = self._read_stations()
-
-    # =================
-    # Load event catalog
-    # =================
-    def _read_catalog(self):
-        """
-        Function used to load events catalog file
-
-        @events: list    ;list of dictionary which contain starttime, latitude,
-                          longitude, depth, magnitude
-        """
-
-        with open(self.catalog) as f:
-            lines = f.readlines()
-
-        events = []
-        for line in lines:
-            starttime, latitude, longitude, depth, magnitude = line.split()[
-                0:5]
-            event = {
-                "starttime": starttime, "latitude": latitude,
-                "longitude": longitude, "depth": depth,
-                "magnitude": magnitude
-            }
-            events.append(event)
-        return events
 
     # =================
     # Load station info
@@ -254,13 +227,37 @@ class Client(object):
             self.writesac(st, station, event, utcevent)
 
 
+def read_catalog(catalog):
+    """
+    Read event catalog.
+
+    @events: list    ;list of dictionary which contain starttime, latitude,
+                        longitude, depth, magnitude
+    """
+
+    with open(catalog) as f:
+        lines = f.readlines()
+
+    events = []
+    for line in lines:
+        starttime, latitude, longitude, depth, magnitude = line.split()[
+            0:5]
+        event = {
+            "starttime": starttime, "latitude": latitude,
+            "longitude": longitude, "depth": depth,
+            "magnitude": magnitude
+        }
+        events.append(event)
+    return events
+
 if __name__ == '__main__':
     client = Client(
-        "../bg6.5.csv",
         "../station.info.norm",
         "/run/media/seispider/Seagate Backup Plus Drive/",
         "../test/"
     )
     duration = 6000
-    for event in client.events:
+
+    events = read_catalog("../bg6.5.csv")
+    for event in events:
         client.get_waveform(event, duration)
