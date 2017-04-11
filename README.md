@@ -10,6 +10,9 @@ Collection of scripts to help manager CGRM-DMC database.
 - write event information (origin time, location, magnitude) into SAC files
 - write station information (location etc.) into SAC files.
 
+### re-head.py
+- re-write header of SAC files
+
 ## History
 
 - 20170408: verify the trimed result and chunk events multiprocessing
