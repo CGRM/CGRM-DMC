@@ -52,13 +52,8 @@ class Client(object):
 
         stations = {}
         for line in lines:
-            net, sta = (line.split()[0]).split(".")
-
-            stla, stlo, stel, stdp = line.split()[-4:]
-            key = ".".join([net, sta])
+            key, stla, stlo, stel, stdp = line.split()[0:5]
             value = {
-                "net": net,
-                "sta": sta,
                 "stla": float(stla),
                 "stlo": float(stlo),
                 "stel": float(stel),
