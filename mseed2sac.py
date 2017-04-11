@@ -125,13 +125,12 @@ class Client(object):
         st.trim(starttime, starttime + duration)
         return st
 
-    def _writesac(self, st, station, event):
+    def _writesac(self, stream, station, event):
         """
         Write data with SAC format with event and station information.
         """
-        for i in range(len(st)):
-            Trace = st[i]
-            key = ".".join([Trace.stats.network, Trace.stats.station])
+        for trace in stream:
+            key = ".".join([trace.stats.network, trace.stats.station])
 
             # write missed station info into miss_station.list
             if key not in station:
@@ -140,7 +139,7 @@ class Client(object):
                     f.write(key + "no station info")
                 return
             # transfer obspy trace to sac trace
-            sac_trace = SACTrace.from_obspy_trace(trace=Trace)
+            sac_trace = SACTrace.from_obspy_trace(trace=trace)
 
             # change some headers about station
             sac_trace.stla = station[key]["stla"]
@@ -148,13 +147,13 @@ class Client(object):
             sac_trace.stel = station[key]["stel"]
             sac_trace.stdp = station[key]["stdp"]
 
-            if Trace.stats.channel[-1] == "E":
+            if trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
                 sac_trace.cmpinc = 90
-            elif Trace.stats.channel[-1] == "N":
+            elif trace.stats.channel[-1] == "N":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 90
-            elif Trace.stats.channel[-1] == "Z":
+            elif trace.stats.channel[-1] == "Z":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 0
             else:
@@ -182,7 +181,7 @@ class Client(object):
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
             sac_flnm = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
-                                 "0000", Trace.id, "M", "SAC"])
+                                 "0000", trace.id, "M", "SAC"])
             sac_fullname = os.path.join(sac_loc, sac_flnm)
             sac_trace.write(sac_fullname)
         return
