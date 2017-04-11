@@ -34,105 +34,60 @@ logger = logging.getLogger(__name__)
 
 
 class Client(object):
-    def __init__(self, catalog, stationinfo, mseeddir, sacdir):
-        self.catalog = catalog
-        self.stationinfo = stationinfo
+    def __init__(self, stationinfo, mseeddir, sacdir):
         self.mseeddir = mseeddir
         self.sacdir = sacdir
 
-        self.events = self._read_catalog()
-        self.stations = self._read_stations()
+        self.stations = self._read_stations(stationinfo)
 
-    # =================
-    # Load event catalog
-    # =================
-    def _read_catalog(self):
+    def _read_stations(self, stationinfo):
         """
-        Function used to load events catalog file
-
-        @events: list    ;list of dictionary which contain starttime, latitude,
-                          longitude, depth, magnitude
-        """
-
-        with open(self.catalog) as f:
-            lines = f.readlines()
-
-        events = []
-        for line in lines:
-            starttime, latitude, longitude, depth, magnitude = line.split()[
-                0:5]
-            event = {
-                "starttime": starttime, "latitude": latitude,
-                "longitude": longitude, "depth": depth,
-                "magnitude": magnitude
-            }
-            events.append(event)
-        return events
-
-    # =================
-    # Load station info
-    # =================
-    def _read_stations(self):
-        """
-        function used to load the station info.
+        Read station information from station metadata file.
 
         @stationinfo: dict     ;dict of station infos
         """
-        if not os.path.isfile(self.stationinfo):
-            msg = "{} file not exist!\n".format(self.stationinfo)
-            logger.error(msg)
-            self.stationinfo = raw_input("Please input file location:\n")
-
-        with open(self.stationinfo) as f:
+        with open(stationinfo, "r") as f:
             lines = f.readlines()
 
         stations = {}
         for line in lines:
-            net, sta = (line.split()[0]).split(".")
-
-            stla, stlo, stel, stdp = line.split()[-4:]
-            key = ".".join([net, sta])
+            key, stla, stlo, stel, stdp = line.split()[0:5]
             value = {
-                "stla": stla, "stlo": stlo, "stel": stel,
-                "stdp": stdp, "sta": sta, "net": net
+                "stla": float(stla),
+                "stlo": float(stlo),
+                "stel": float(stel),
+                "stdp": float(stdp),
             }
             stations[key] = value
         return stations
-    # =================
-    # Obtain data folder name
-    # =================
 
-    def get_dirname(self, starttime, duration):
+    def _get_dirname(self, starttime, duration):
         """
-        function used to obtain the folder name
+        Get dirname based on event starttime.
 
         @starttime: str           ;starttime of event in UTC
         @duration: int            ;duration of trimming [Unit = second]
         @folder_name: list        ;The folder name
-         """
-        # change string starttime to UTCDateTime
-        utcevent = UTCDateTime(starttime)
-        # Change this UTC time to Beijing Time(BJT_Event)
-        bjt_event = utcevent + dt.timedelta(hours=8)
-        # obtain end time of Beijing time zone
-        end_bjt_event = bjt_event + duration
+        """
+        # mseed data are stored according to BJT not UTC
+        starttime_in_bjt = starttime + dt.timedelta(hours=8)
+        endtime_in_bjt = starttime_in_bjt + duration
 
-        # transfer UTCDatetime to string
-        bjt_event_str = bjt_event.strftime("%Y%m%d")
-        end_bjt_event_str = end_bjt_event.strftime("%Y%m%d")
+        starttime_in_bjt_str = starttime_in_bjt.strftime("%Y%m%d")
+        endtime_in_bjt_str = endtime_in_bjt.strftime("%Y%m%d")
 
         folder_name = []
-        if bjt_event_str == end_bjt_event_str:
-            folder_name.append(bjt_event_str)
+        if starttime_in_bjt_str == endtime_in_bjt_str:
+            folder_name.append(starttime_in_bjt_str)
         else:
-            folder_name.append(bjt_event_str)
-            folder_name.append(end_bjt_event_str)
+            folder_name.append(starttime_in_bjt_str)
+            folder_name.append(endtime_in_bjt_str)
 
-        return utcevent, folder_name
+        return folder_name
 
-    def _read_mseed(self, station, dirnames, utcevent, duration):
+    def _read_mseed(self, station, dirnames, starttime, duration):
         """
-        trim waveform for particular event
+        Trim waveform for particular event.
 
         """
         # return none if dirnames is empty
@@ -166,101 +121,117 @@ class Client(object):
             msg = "Error in Reading {} !".format(station.keys()[0])
             logger.error(msg)
             return None
-        st.trim(utcevent, utcevent + duration)
+        st.trim(starttime, starttime + duration)
         return st
 
-    def writesac(self, st, station, event, utcevent):
+    def _writesac(self, stream, station, event):
         """
-        function used to write data with SAC format
+        Write data with SAC format with event and station information.
         """
-        for i in range(len(st)):
-            Trace = st[i]
-            key = ".".join([Trace.stats.network, Trace.stats.station])
+        for trace in stream:
+            key = ".".join([trace.stats.network, trace.stats.station])
 
             # write missed station info into miss_station.list
             if key not in station:
-                print "Warning: No Station info for {}".format(key)
+                logger.warn("Warning: No Station info for %s", key)
                 with open(os.path.join("./Log.list"), "a") as f:
                     f.write(key + "no station info")
                 return
             # transfer obspy trace to sac trace
-            sac_trace_init = SACTrace()
-            sac_trace = sac_trace_init.from_obspy_trace(trace=Trace)
+            sac_trace = SACTrace.from_obspy_trace(trace=trace)
 
             # change some headers about station
-            sac_trace.stla = float(station[key]["stla"])
-            sac_trace.stlo = float(station[key]["stlo"])
-            sac_trace.stel = float(station[key]["stel"])
-            sac_trace.stdp = float(station[key]["stdp"])
+            sac_trace.stla = station[key]["stla"]
+            sac_trace.stlo = station[key]["stlo"]
+            sac_trace.stel = station[key]["stel"]
+            sac_trace.stdp = station[key]["stdp"]
 
-            if Trace.stats.channel[-1] == "E":
+            if trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
                 sac_trace.cmpinc = 90
-            if Trace.stats.channel[-1] == "N":
+            elif trace.stats.channel[-1] == "N":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 90
-            if Trace.stats.channel[-1] == "Z":
+            elif trace.stats.channel[-1] == "Z":
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 0
+            else:
+                logger.warn("Not E|N|Z component")
 
             # change some headers about event
-            sac_trace.evla = float(event["latitude"])
-            sac_trace.evlo = float(event["longitude"])
-            sac_trace.evdp = float(event["depth"])
-            sac_trace.mag = float(event["magnitude"])
+            sac_trace.evla = event["latitude"]
+            sac_trace.evlo = event["longitude"]
+            sac_trace.evdp = event["depth"]
+            sac_trace.mag = event["magnitude"]
             # change reference time
-            sac_trace.nzyear = utcevent.year
-            sac_trace.nzjday = utcevent.julday
-            sac_trace.nzhour = utcevent.hour
-            sac_trace.nzmin = utcevent.minute
-            sac_trace.nzsec = utcevent.second
-            sac_trace.nzmsec = utcevent.microsecond / 1000
+            starttime = event["starttime"]
+            sac_trace.nzyear = starttime.year
+            sac_trace.nzjday = starttime.julday
+            sac_trace.nzhour = starttime.hour
+            sac_trace.nzmin = starttime.minute
+            sac_trace.nzsec = starttime.second
+            sac_trace.nzmsec = starttime.microsecond / 1000
             sac_trace.o = 0
             sac_trace.iztype = 'io'
 
             # SAC file lodation
-            sub_fldr_nm = utcevent.strftime("%Y%m%d%H%M%S")
+            sub_fldr_nm = starttime.strftime("%Y%m%d%H%M%S")
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
-            sac_flnm = [utcevent.strftime("%Y.%j.%H.%M.%S")]
-            sac_flnm += ["0000"]
-            sac_flnm += [
-                str(sac_trace.knetwk), str(sac_trace.kstnm),
-                "00", str(sac_trace.kcmpnm), "M", "SAC"
-            ]
-            sac_flnm_str = ".".join(sac_flnm)
-            sac_pathname = os.path.join(sac_loc, sac_flnm_str)
-            sac_trace.write(sac_pathname)
+            sac_flnm = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
+                                 "0000", trace.id, "M", "SAC"])
+            sac_fullname = os.path.join(sac_loc, sac_flnm)
+            sac_trace.write(sac_fullname)
         return
 
-    # ===============
-    # get_waveform
-    # ===============
     def get_waveform(self, event, duration):
-        utcevent, dirnames = self.get_dirname(event["starttime"], duration)
+        dirnames = self._get_dirname(event["starttime"], duration)
         # check if folders exists
-        for i in range(len(dirnames)):
-            if not os.path.exists(os.path.join(self.mseeddir, dirnames[i])):
-                msg = "{} not exist".format(dirnames[i])
+        for dirname in dirnames:
+            if not os.path.exists(os.path.join(self.mseeddir, dirname)):
+                msg = "{} not exist".format(dirname)
                 logger.error(msg)
                 return
         for key, value in self.stations.iteritems():    # loop over all stations
             station = {key: value}
-            st = self._read_mseed(station, dirnames, utcevent, duration)
+            st = self._read_mseed(station, dirnames, event["starttime"], duration)
             # Reading error
             if not st:
                 continue
-            self.writesac(st, station, event, utcevent)
+            self._writesac(st, station, event)
 
+
+def read_catalog(catalog):
+    """
+    Read event catalog.
+
+    @events: list    ;list of dictionary which contain starttime, latitude,
+                        longitude, depth, magnitude
+    """
+
+    with open(catalog) as f:
+        lines = f.readlines()
+
+    events = []
+    for line in lines:
+        starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
+        event = {
+            "starttime": UTCDateTime(starttime),
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "depth": float(depth),
+            "magnitude": float(magnitude),
+        }
+        events.append(event)
+    return events
 
 if __name__ == '__main__':
-    client = Client(
-        "../bg6.5.csv",
-        "../station.info.norm",
-        "/run/media/seispider/Seagate Backup Plus Drive/",
-        "../test/"
-    )
+    client = Client(stationinfo="../station.info.norm",
+                    mseeddir="/run/media/seispider/Seagate Backup Plus Drive/",
+                    sacdir="../test/")
     duration = 6000
-    for event in client.events:
+
+    events = read_catalog("../bg6.5.csv")
+    for event in events:
         client.get_waveform(event, duration)
