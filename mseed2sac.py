@@ -181,13 +181,8 @@ class Client(object):
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
-            sac_flnm = [starttime.strftime("%Y.%j.%H.%M.%S")]
-            sac_flnm += ["0000"]
-            sac_flnm += [
-                str(sac_trace.knetwk), str(sac_trace.kstnm),
-                "00", str(sac_trace.kcmpnm), "M", "SAC"
-            ]
-            sac_flnm_str = ".".join(sac_flnm)
+            sac_flnm_str = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
+                                     "0000", trace.id, "M", "SAC"])
             sac_pathname = os.path.join(sac_loc, sac_flnm_str)
             sac_trace.write(sac_pathname)
         return
