@@ -47,12 +47,7 @@ class Client(object):
 
         @stationinfo: dict     ;dict of station infos
         """
-        if not os.path.isfile(self.stationinfo):
-            msg = "{} file not exist!\n".format(self.stationinfo)
-            logger.error(msg)
-            self.stationinfo = raw_input("Please input file location:\n")
-
-        with open(self.stationinfo) as f:
+        with open(self.stationinfo, "r") as f:
             lines = f.readlines()
 
         stations = {}
