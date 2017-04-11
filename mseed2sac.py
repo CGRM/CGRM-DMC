@@ -240,12 +240,13 @@ def read_catalog(catalog):
 
     events = []
     for line in lines:
-        starttime, latitude, longitude, depth, magnitude = line.split()[
-            0:5]
+        starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
         event = {
-            "starttime": starttime, "latitude": latitude,
-            "longitude": longitude, "depth": depth,
-            "magnitude": magnitude
+            "starttime": starttime,
+            "latitude": latitude,
+            "longitude": longitude,
+            "depth": depth,
+            "magnitude": magnitude,
         }
         events.append(event)
     return events
