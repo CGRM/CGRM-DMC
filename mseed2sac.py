@@ -74,7 +74,7 @@ class Client(object):
     # Obtain data folder name
     # =================
 
-    def get_dirname(self, starttime, duration):
+    def _get_dirname(self, starttime, duration):
         """
         function used to obtain the folder name
 
@@ -210,7 +210,7 @@ class Client(object):
     # get_waveform
     # ===============
     def get_waveform(self, event, duration):
-        utcevent, dirnames = self.get_dirname(event["starttime"], duration)
+        utcevent, dirnames = self._get_dirname(event["starttime"], duration)
         # check if folders exists
         for i in range(len(dirnames)):
             if not os.path.exists(os.path.join(self.mseeddir, dirnames[i])):
