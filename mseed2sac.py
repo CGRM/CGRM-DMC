@@ -79,22 +79,20 @@ class Client(object):
         @starttime: str           ;starttime of event in UTC
         @duration: int            ;duration of trimming [Unit = second]
         @folder_name: list        ;The folder name
-         """
-        # Change this UTC time to Beijing Time(BJT_Event)
-        bjt_event = starttime + dt.timedelta(hours=8)
-        # obtain end time of Beijing time zone
-        end_bjt_event = bjt_event + duration
+        """
+        # mseed data are stored according to BJT not UTC
+        starttime_in_bjt = starttime + dt.timedelta(hours=8)
+        endtime_in_bjt = starttime_in_bjt + duration
 
-        # transfer UTCDatetime to string
-        bjt_event_str = bjt_event.strftime("%Y%m%d")
-        end_bjt_event_str = end_bjt_event.strftime("%Y%m%d")
+        starttime_in_bjt_str = starttime_in_bjt.strftime("%Y%m%d")
+        endtime_in_bjt_str = endtime_in_bjt.strftime("%Y%m%d")
 
         folder_name = []
-        if bjt_event_str == end_bjt_event_str:
-            folder_name.append(bjt_event_str)
+        if starttime_in_bjt_str == endtime_in_bjt_str:
+            folder_name.append(starttime_in_bjt_str)
         else:
-            folder_name.append(bjt_event_str)
-            folder_name.append(end_bjt_event_str)
+            folder_name.append(starttime_in_bjt_str)
+            folder_name.append(endtime_in_bjt_str)
 
         return folder_name
 
