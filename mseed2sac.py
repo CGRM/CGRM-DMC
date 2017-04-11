@@ -152,7 +152,7 @@ class Client(object):
 
             # write missed station info into miss_station.list
             if key not in station:
-                print "Warning: No Station info for {}".format(key)
+                logger.warn("Warning: No Station info for %s", key)
                 with open(os.path.join("./Log.list"), "a") as f:
                     f.write(key + "no station info")
                 return
