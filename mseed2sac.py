@@ -189,9 +189,9 @@ class Client(object):
     def get_waveform(self, event, duration):
         dirnames = self._get_dirname(event["starttime"], duration)
         # check if folders exists
-        for i in range(len(dirnames)):
-            if not os.path.exists(os.path.join(self.mseeddir, dirnames[i])):
-                msg = "{} not exist".format(dirnames[i])
+        for dirname in dirnames:
+            if not os.path.exists(os.path.join(self.mseeddir, dirname)):
+                msg = "{} not exist".format(dirname)
                 logger.error(msg)
                 return
         for key, value in self.stations.iteritems():    # loop over all stations
