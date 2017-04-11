@@ -35,19 +35,18 @@ logger = logging.getLogger(__name__)
 
 class Client(object):
     def __init__(self, stationinfo, mseeddir, sacdir):
-        self.stationinfo = stationinfo
         self.mseeddir = mseeddir
         self.sacdir = sacdir
 
-        self.stations = self._read_stations()
+        self.stations = self._read_stations(stationinfo)
 
-    def _read_stations(self):
+    def _read_stations(self, stationinfo):
         """
         Read station information from station metadata file.
 
         @stationinfo: dict     ;dict of station infos
         """
-        with open(self.stationinfo, "r") as f:
+        with open(stationinfo, "r") as f:
             lines = f.readlines()
 
         stations = {}
