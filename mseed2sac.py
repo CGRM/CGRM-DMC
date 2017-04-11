@@ -41,9 +41,6 @@ class Client(object):
 
         self.stations = self._read_stations()
 
-    # =================
-    # Load station info
-    # =================
     def _read_stations(self):
         """
         function used to load the station info.
@@ -70,9 +67,6 @@ class Client(object):
             }
             stations[key] = value
         return stations
-    # =================
-    # Obtain data folder name
-    # =================
 
     def _get_dirname(self, starttime, duration):
         """
@@ -206,9 +200,6 @@ class Client(object):
             sac_trace.write(sac_pathname)
         return
 
-    # ===============
-    # get_waveform
-    # ===============
     def get_waveform(self, event, duration):
         utcevent, dirnames = self._get_dirname(event["starttime"], duration)
         # check if folders exists
