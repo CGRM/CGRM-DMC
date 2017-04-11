@@ -140,8 +140,7 @@ class Client(object):
                     f.write(key + "no station info")
                 return
             # transfer obspy trace to sac trace
-            sac_trace_init = SACTrace()
-            sac_trace = sac_trace_init.from_obspy_trace(trace=Trace)
+            sac_trace = SACTrace.from_obspy_trace(trace=Trace)
 
             # change some headers about station
             sac_trace.stla = station[key]["stla"]
