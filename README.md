@@ -1,7 +1,6 @@
- 
 # CGRM-DMC
 
-Collection of scripts to help manager CGRM-DMC database.
+Collection of scripts to help manage CGRM-DMC database.
 
 ## Scripts
 
