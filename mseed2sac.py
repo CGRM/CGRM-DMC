@@ -44,21 +44,19 @@ class Client(object):
         """
         Read station information from station metadata file.
 
-        @stationinfo: dict     ;dict of station infos
         """
         with open(stationinfo, "r") as f:
             lines = f.readlines()
-
-        stations = {}
-        for line in lines:
-            key, stla, stlo, stel, stdp = line.split()[0:5]
-            value = {
-                "stla": float(stla),
-                "stlo": float(stlo),
-                "stel": float(stel),
-                "stdp": float(stdp),
-            }
-            stations[key] = value
+            stations = []
+            for line in lines:
+                key, stla, stlo, stel, stdp = line.split()[0:5]
+                value = {
+                            "stla": float(stla),
+                            "stlo": float(stlo),
+                            "stel": float(stel),
+                            "stdp": float(stdp),
+                        }
+                stations.append({key: value})
         return stations
 
     def _get_dirname(self, starttime, duration):
@@ -94,31 +92,32 @@ class Client(object):
         if not dirnames:
             return
 
+
         # obtain event waveform
         if len(dirnames) == 1:  # one day
-            pattern = ".".join([station.keys()[0], "*"])
+            pattern = ".".join([list(station.keys())[0], "*"])
             fl_dr_nm = os.path.join(self.mseeddir, dirnames[0], pattern)
             try:
                 st = read(fl_dr_nm)
             except Exception:
-                msg = "Error in Reading {} !".format(station.keys()[0])
+                msg = "Error in Reading {} !".format(list(station.keys())[0])
                 logger.error(msg)
                 return None
         elif len(dirnames) == 2:  # two days
-            pattern = ".".join([station.keys()[0], "*"])
+            pattern = ".".join([list(station.keys())[0], "*"])
             fl_dr_nm0 = os.path.join(self.mseeddir, dirnames[0], pattern)
             fl_dr_nm1 = os.path.join(self.mseeddir, dirnames[1], pattern)
             try:
                 st = read(fl_dr_nm0) + read(fl_dr_nm1)
             except Exception:
-                msg = "Error in Reading {} !".format(station.keys()[0])
+                msg = "Error in Reading {} !".format(list(station.keys())[0])
                 logger.error(msg)
                 return None
         # Merge data
         try:
             st.merge(fill_value=0)
         except Exception:
-            msg = "Error in Reading {} !".format(station.keys()[0])
+            msg = "Error in Reading {} !".format(list(station.keys())[0])
             logger.error(msg)
             return None
         st.trim(starttime, starttime + duration)
@@ -133,9 +132,7 @@ class Client(object):
 
             # write missed station info into miss_station.list
             if key not in station:
-                logger.warn("Warning: No Station info for %s", key)
-                with open(os.path.join("./Log.list"), "a") as f:
-                    f.write(key + "no station info")
+                logger.warn(" No Station info for %s", key)
                 return
             # transfer obspy trace to sac trace
             sac_trace = SACTrace.from_obspy_trace(trace=trace)
@@ -193,9 +190,9 @@ class Client(object):
                 msg = "{} not exist".format(dirname)
                 logger.error(msg)
                 return
-        for key, value in self.stations.iteritems():    # loop over all stations
-            station = {key: value}
-            st = self._read_mseed(station, dirnames, event["starttime"], duration)
+        for station in self.stations:    # loop over all stations
+            st = self._read_mseed(
+                station, dirnames, event["starttime"], duration)
             # Reading error
             if not st:
                 continue
@@ -225,6 +222,7 @@ def read_catalog(catalog):
         }
         events.append(event)
     return events
+
 
 if __name__ == '__main__':
     client = Client(stationinfo="../station.info.norm",

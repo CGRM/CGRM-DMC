@@ -1,3 +1,4 @@
+ 
 # CGRM-DMC
 
 Collection of scripts to help manager CGRM-DMC database.
@@ -6,6 +7,11 @@ Collection of scripts to help manager CGRM-DMC database.
 
 ### mseed2sac.py
 
+**Dependency**
+* Python3.6
+* Obspy1.0.2
+
+**Fucntion**
 - cut event data in SAC format from continuous waveform database in mseed format.
 - write event information (origin time, location, magnitude) into SAC files
 - write station information (location etc.) into SAC files.
