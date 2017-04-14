@@ -106,7 +106,7 @@ class Client(object):
         st.trim(starttime, endtime)
         return st
 
-    def _writesac(self, stream, station, event):
+    def _writesac(self, stream, event, station):
         """
         Write data with SAC format with event and station information.
         """
@@ -179,7 +179,7 @@ class Client(object):
             # Reading error
             if not st:
                 continue
-            self._writesac(st, station, event)
+            self._writesac(st, event, station)
 
 
 def read_catalog(catalog):
