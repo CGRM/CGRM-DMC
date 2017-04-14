@@ -160,7 +160,7 @@ class Client(object):
             sac_trace.o = 0
             sac_trace.iztype = 'io'
 
-            # SAC file lodation
+            # SAC file location
             sub_fldr_nm = origin.strftime("%Y%m%d%H%M%S")
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
