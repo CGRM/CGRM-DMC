@@ -8,9 +8,6 @@ Files of miniSEED should be organized as <net>.<sta>.<loc>.<cha>.<starttime>.mse
 
 All these files collected in one day folder named as YYYYMMDD
  eg. 20160501
-
-@Data_dir: string     ;Directory of Data
-@Catalog_dirname: string  ;Directory+name of events Catalog_dir
 """
 from obspy import UTCDateTime
 import datetime as dt
@@ -43,7 +40,6 @@ class Client(object):
     def _read_stations(self, stationinfo):
         """
         Read station information from station metadata file.
-
         """
         with open(stationinfo, "r") as f:
             lines = f.readlines()
@@ -62,10 +58,6 @@ class Client(object):
     def _get_dirname(self, starttime, duration):
         """
         Get dirname based on event starttime.
-
-        @starttime: str           ;starttime of event in UTC
-        @duration: int            ;duration of trimming [Unit = second]
-        @folder_name: list        ;The folder name
         """
         # mseed data are stored according to BJT not UTC
         starttime_in_bjt = starttime + dt.timedelta(hours=8)
@@ -86,7 +78,6 @@ class Client(object):
     def _read_mseed(self, station, dirnames, starttime, duration):
         """
         Trim waveform for particular event.
-
         """
         # return none if dirnames is empty
         if not dirnames:
@@ -202,9 +193,6 @@ class Client(object):
 def read_catalog(catalog):
     """
     Read event catalog.
-
-    @events: list    ;list of dictionary which contain starttime, latitude,
-                        longitude, depth, magnitude
     """
 
     with open(catalog) as f:
