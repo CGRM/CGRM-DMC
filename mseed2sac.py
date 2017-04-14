@@ -121,7 +121,7 @@ class Client(object):
 
             # write missed station info into miss_station.list
             if key not in station:
-                logger.warn(" No Station info for %s", key)
+                logger.warning(" No Station info for %s", key)
                 return
             # transfer obspy trace to sac trace
             sac_trace = SACTrace.from_obspy_trace(trace=trace)
@@ -142,7 +142,7 @@ class Client(object):
                 sac_trace.cmpaz = 0
                 sac_trace.cmpinc = 0
             else:
-                logger.warn("Not E|N|Z component")
+                logger.warning("Not E|N|Z component")
 
             # change some headers about event
             sac_trace.evla = event["latitude"]
