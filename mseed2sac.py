@@ -29,18 +29,15 @@ For example:
     |    `-- ...
     |--- ...
 """
-from obspy import UTCDateTime
-import datetime as dt
-from obspy import read
 import os
+import logging
+from datetime import timedelta
+
+from obspy import read, UTCDateTime
 from obspy.io.sac import SACTrace
 
-import logging
 
-
-# ===============
 # Setup the logger
-# ===============
 FORMAT = "[%(asctime)s]  %(levelname)s: %(message)s"
 logging.basicConfig(
     level=logging.INFO,
@@ -72,9 +69,9 @@ class Client(object):
                            "stla": float(stla),
                            "stlo": float(stlo),
                            "stel": float(stel),
-                           }
+                          }
                 stations.append(station)
-        logger.info("{} stations found.".format(len(stations)))
+        logger.info("%d stations found.", len(stations))
         return stations
 
     def _get_dirname(self, starttime, endtime):
@@ -82,8 +79,8 @@ class Client(object):
         Get directory names based on starttime and endtime.
         """
         # mseed data are stored according to BJT not UTC
-        starttime_in_bjt = starttime + dt.timedelta(hours=8)
-        endtime_in_bjt = endtime + dt.timedelta(hours=8)
+        starttime_in_bjt = starttime + timedelta(hours=8)
+        endtime_in_bjt = endtime + timedelta(hours=8)
 
         if starttime_in_bjt.date == endtime_in_bjt.date:  # one day
             return [starttime_in_bjt.strftime("%Y%m%d")]
