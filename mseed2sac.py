@@ -41,18 +41,17 @@ class Client(object):
         """
         Read station information from station metadata file.
         """
+        stations = []
         with open(stationinfo, "r") as f:
-            lines = f.readlines()
-            stations = []
-            for line in lines:
-                key, stla, stlo, stel, stdp = line.split()[0:5]
-                value = {
-                            "stla": float(stla),
-                            "stlo": float(stlo),
-                            "stel": float(stel),
-                            "stdp": float(stdp),
-                        }
-                stations.append({key: value})
+            for line in f:
+                name, stla, stlo, stel, stdp = line.split()[0:5]
+                station = {"name": name,
+                           "stla": float(stla),
+                           "stlo": float(stlo),
+                           "stel": float(stel),
+                           "stdp": float(stdp),
+                           }
+                stations.append(station)
         return stations
 
     def _get_dirname(self, starttime, duration):
@@ -82,7 +81,6 @@ class Client(object):
         # return none if dirnames is empty
         if not dirnames:
             return
-
 
         # obtain event waveform
         if len(dirnames) == 1:  # one day
@@ -129,10 +127,10 @@ class Client(object):
             sac_trace = SACTrace.from_obspy_trace(trace=trace)
 
             # change some headers about station
-            sac_trace.stla = station[key]["stla"]
-            sac_trace.stlo = station[key]["stlo"]
-            sac_trace.stel = station[key]["stel"]
-            sac_trace.stdp = station[key]["stdp"]
+            sac_trace.stla = station["stla"]
+            sac_trace.stlo = station["stlo"]
+            sac_trace.stel = station["stel"]
+            sac_trace.stdp = station["stdp"]
 
             if trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
