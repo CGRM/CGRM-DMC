@@ -1,13 +1,33 @@
 #!/usr/bin/env python
 # -*- coding:utf8 -*-
 """
-Scripts used to trim earthquake event waveform from continues waveform
+Scripts used to trim earthquake event waveform from continues waveform.
 
-Files of miniSEED should be organized as <net>.<sta>.<loc>.<cha>.<starttime>.mseed
- eg. JX.WAA.00.BHZ.20160501000004.mseed
+miniSEED should be organized as:
 
-All these files collected in one day folder named as YYYYMMDD
- eg. 20160501
+    |--- YYYYMMDD
+    |    |-- <net>.<sta>.<loc>.<cha>.<starttime>.mseed
+    |    |-- <net>.<sta>.<loc>.<cha>.<starttime>.mseed
+    |    `-- ...
+    |--- YYYYMMDD
+    |    |-- <net>.<sta>.<loc>.<cha>.<starttime>.mseed
+    |    |-- <net>.<sta>.<loc>.<cha>.<starttime>.mseed
+    |    `-- ...
+    |--- ...
+
+For example:
+
+    |--- 20160101
+    |    |-- NET1.STA1.00.BHE.20160101000000.mseed
+    |    |-- NET1.STA1.00.BHN.20160101000000.mseed
+    |    |-- NET1.STA1.00.BHZ.20160101000000.mseed
+    |    `-- ...
+    |--- 20160102
+    |    |-- NET1.STA1.00.BHE.20160102000000.mseed
+    |    |-- NET1.STA1.00.BHN.20160102000000.mseed
+    |    |-- NET1.STA1.00.BHZ.20160102000000.mseed
+    |    `-- ...
+    |--- ...
 """
 from obspy import UTCDateTime
 import datetime as dt
