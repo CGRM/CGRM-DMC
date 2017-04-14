@@ -54,13 +54,13 @@ class Client(object):
                 stations.append(station)
         return stations
 
-    def _get_dirname(self, starttime, duration):
+    def _get_dirname(self, starttime, endtime):
         """
         Get dirname based on event starttime.
         """
         # mseed data are stored according to BJT not UTC
         starttime_in_bjt = starttime + dt.timedelta(hours=8)
-        endtime_in_bjt = starttime_in_bjt + duration
+        endtime_in_bjt = endtime + dt.timedelta(hours=8)
 
         starttime_in_bjt_str = starttime_in_bjt.strftime("%Y%m%d")
         endtime_in_bjt_str = endtime_in_bjt.strftime("%Y%m%d")
@@ -74,7 +74,7 @@ class Client(object):
 
         return folder_name
 
-    def _read_mseed(self, station, dirnames, starttime, duration):
+    def _read_mseed(self, station, dirnames, starttime, endtime):
         """
         Trim waveform for particular event.
         """
@@ -109,7 +109,7 @@ class Client(object):
             msg = "Error in Reading {} !".format(list(station.keys())[0])
             logger.error(msg)
             return None
-        st.trim(starttime, starttime + duration)
+        st.trim(starttime, endtime)
         return st
 
     def _writesac(self, stream, station, event):
@@ -181,7 +181,7 @@ class Client(object):
                 return
         for station in self.stations:    # loop over all stations
             st = self._read_mseed(
-                station, dirnames, event["origin"], duration)
+                station, dirnames, event["origin"], event["origin"]+duration)
             # Reading error
             if not st:
                 continue
