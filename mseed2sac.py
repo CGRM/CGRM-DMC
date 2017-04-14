@@ -40,7 +40,7 @@ from obspy.io.sac import SACTrace
 # Setup the logger
 FORMAT = "[%(asctime)s]  %(levelname)s: %(message)s"
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format=FORMAT,
     datefmt='%Y-%m-%d %H:%M:%S'
 )
@@ -97,46 +97,36 @@ class Client(object):
             return
 
         # obtain event waveform
+        pattern = station['name'] + ".*"
         if len(dirnames) == 1:  # one day
-            pattern = ".".join([list(station.keys())[0], "*"])
             fl_dr_nm = os.path.join(self.mseeddir, dirnames[0], pattern)
             try:
                 st = read(fl_dr_nm)
             except Exception:
-                msg = "Error in Reading {} !".format(list(station.keys())[0])
-                logger.error(msg)
+                logger.error("Error in reading %s", station['name'])
                 return None
         elif len(dirnames) == 2:  # two days
-            pattern = ".".join([list(station.keys())[0], "*"])
             fl_dr_nm0 = os.path.join(self.mseeddir, dirnames[0], pattern)
             fl_dr_nm1 = os.path.join(self.mseeddir, dirnames[1], pattern)
             try:
                 st = read(fl_dr_nm0) + read(fl_dr_nm1)
             except Exception:
-                msg = "Error in Reading {} !".format(list(station.keys())[0])
-                logger.error(msg)
+                logger.error("Error in reading %s", station['name'])
                 return None
         # Merge data
         try:
             st.merge(fill_value=0)
         except Exception:
-            msg = "Error in Reading {} !".format(list(station.keys())[0])
-            logger.error(msg)
+            logger.error("Error in merging %s", station['name'])
             return None
         st.trim(starttime, endtime)
         return st
 
-    def _writesac(self, stream, event, station):
+    def _writesac(self, stream, event, station, outdir):
         """
         Write data with SAC format with event and station information.
         """
         for trace in stream:  # loop over 3-component traces
-            key = ".".join([trace.stats.network, trace.stats.station])
-
-            # write missed station info into miss_station.list
-            if key not in station:
-                logger.warning(" No Station info for %s", key)
-                return
             # transfer obspy trace to sac trace
             sac_trace = SACTrace.from_obspy_trace(trace=trace)
 
@@ -174,31 +164,34 @@ class Client(object):
             sac_trace.iztype = 'io'
 
             # SAC file location
-            sub_fldr_nm = origin.strftime("%Y%m%d%H%M%S")
-            sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
-            if not os.path.exists(sac_loc):
-                os.mkdir(sac_loc)
             sac_flnm = ".".join([origin.strftime("%Y.%j.%H.%M.%S"),
                                  "0000", trace.id, "M", "SAC"])
-            sac_fullname = os.path.join(sac_loc, sac_flnm)
+            sac_fullname = os.path.join(outdir, sac_flnm)
             sac_trace.write(sac_fullname)
         return
 
     def get_waveform(self, event, starttime, endtime):
         dirnames = self._get_dirname(starttime, endtime)
+        logger.debug("dirnames: %s", dirnames)
         # check if folders exists
         for dirname in dirnames:
             if not os.path.exists(os.path.join(self.mseeddir, dirname)):
                 msg = "{} not exist".format(dirname)
                 logger.error(msg)
                 return
-        for station in self.stations:    # loop over all stations
-            st = self._read_mseed(
-                station, dirnames, starttime, endtime)
+
+        eventdir = event['origin'].strftime("%Y%m%d%H%M%S")
+        outdir = os.path.join(self.sacdir, eventdir)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir, exist_ok=True)
+
+        # loop over all stations
+        for station in self.stations:
+            st = self._read_mseed(station, dirnames, starttime, endtime)
             # Reading error
             if not st:
                 continue
-            self._writesac(st, event, station)
+            self._writesac(st, event, station, outdir)
 
 
 def read_catalog(catalog):
@@ -235,6 +228,7 @@ if __name__ == '__main__':
 
     events = read_catalog("events.csv")
     for event in events:
+        logger.info("origin: %s", event['origin'])
         starttime = event['origin']
         endtime = starttime + 6000
         client.get_waveform(event, starttime, endtime)
