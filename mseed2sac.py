@@ -56,23 +56,17 @@ class Client(object):
 
     def _get_dirname(self, starttime, endtime):
         """
-        Get dirname based on event starttime.
+        Get directory names based on starttime and endtime.
         """
         # mseed data are stored according to BJT not UTC
         starttime_in_bjt = starttime + dt.timedelta(hours=8)
         endtime_in_bjt = endtime + dt.timedelta(hours=8)
 
-        starttime_in_bjt_str = starttime_in_bjt.strftime("%Y%m%d")
-        endtime_in_bjt_str = endtime_in_bjt.strftime("%Y%m%d")
-
-        folder_name = []
-        if starttime_in_bjt_str == endtime_in_bjt_str:
-            folder_name.append(starttime_in_bjt_str)
-        else:
-            folder_name.append(starttime_in_bjt_str)
-            folder_name.append(endtime_in_bjt_str)
-
-        return folder_name
+        if starttime_in_bjt.date == endtime_in_bjt.date:  # one day
+            return [starttime_in_bjt.strftime("%Y%m%d")]
+        else:  # two days
+            return [starttime_in_bjt.strftime("%Y%m%d"),
+                    endtime_in_bjt.strftime("%Y%m%d")]
 
     def _read_mseed(self, station, dirnames, starttime, endtime):
         """
