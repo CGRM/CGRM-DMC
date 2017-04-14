@@ -34,24 +34,27 @@ class Client(object):
     def __init__(self, stationinfo, mseeddir, sacdir):
         self.mseeddir = mseeddir
         self.sacdir = sacdir
-
         self.stations = self._read_stations(stationinfo)
 
     def _read_stations(self, stationinfo):
         """
         Read station information from station metadata file.
+
+        Format of station information:
+
+            NET.STA  latitude  longitude  elevation
         """
         stations = []
         with open(stationinfo, "r") as f:
             for line in f:
-                name, stla, stlo, stel, stdp = line.split()[0:5]
+                name, stla, stlo, stel = line.split()[0:4]
                 station = {"name": name,
                            "stla": float(stla),
                            "stlo": float(stlo),
                            "stel": float(stel),
-                           "stdp": float(stdp),
                            }
                 stations.append(station)
+        logger.info("{} stations found.".format(len(stations)))
         return stations
 
     def _get_dirname(self, starttime, endtime):
@@ -110,7 +113,7 @@ class Client(object):
         """
         Write data with SAC format with event and station information.
         """
-        for trace in stream:
+        for trace in stream:  # loop over 3-component traces
             key = ".".join([trace.stats.network, trace.stats.station])
 
             # write missed station info into miss_station.list
@@ -124,7 +127,6 @@ class Client(object):
             sac_trace.stla = station["stla"]
             sac_trace.stlo = station["stlo"]
             sac_trace.stel = station["stel"]
-            sac_trace.stdp = station["stdp"]
 
             if trace.stats.channel[-1] == "E":
                 sac_trace.cmpaz = 90
@@ -165,8 +167,8 @@ class Client(object):
             sac_trace.write(sac_fullname)
         return
 
-    def get_waveform(self, event, duration):
-        dirnames = self._get_dirname(event["origin"], duration)
+    def get_waveform(self, event, starttime, endtime):
+        dirnames = self._get_dirname(starttime, endtime)
         # check if folders exists
         for dirname in dirnames:
             if not os.path.exists(os.path.join(self.mseeddir, dirname)):
@@ -175,7 +177,7 @@ class Client(object):
                 return
         for station in self.stations:    # loop over all stations
             st = self._read_mseed(
-                station, dirnames, event["origin"], event["origin"]+duration)
+                station, dirnames, starttime, endtime)
             # Reading error
             if not st:
                 continue
@@ -185,8 +187,15 @@ class Client(object):
 def read_catalog(catalog):
     '''
     Read event catalog.
-    '''
 
+    Format of event catalog:
+
+        origin  latitude  longitude  depth  magnitude  magnitude_type
+
+    Example:
+
+        2016-01-03T23:05:22.270  24.8036   93.6505  55.0 6.7  mww
+    '''
     events = []
     with open(catalog) as f:
         for line in f:
@@ -203,11 +212,12 @@ def read_catalog(catalog):
 
 
 if __name__ == '__main__':
-    client = Client(stationinfo="../station.info.norm",
-                    mseeddir="/run/media/seispider/Seagate Backup Plus Drive/",
-                    sacdir="../test/")
-    duration = 6000
+    client = Client(stationinfo="station.info",
+                    mseeddir="MSEED",
+                    sacdir="SAC")
 
-    events = read_catalog("../bg6.5.csv")
+    events = read_catalog("events.csv")
     for event in events:
-        client.get_waveform(event, duration)
+        starttime = event['origin']
+        endtime = starttime + 6000
+        client.get_waveform(event, starttime, endtime)
