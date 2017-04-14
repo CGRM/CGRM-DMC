@@ -152,29 +152,29 @@ class Client(object):
             sac_trace.evdp = event["depth"]
             sac_trace.mag = event["magnitude"]
             # change reference time
-            starttime = event["starttime"]
-            sac_trace.nzyear = starttime.year
-            sac_trace.nzjday = starttime.julday
-            sac_trace.nzhour = starttime.hour
-            sac_trace.nzmin = starttime.minute
-            sac_trace.nzsec = starttime.second
-            sac_trace.nzmsec = starttime.microsecond / 1000
+            origin = event["origin"]
+            sac_trace.nzyear = origin.year
+            sac_trace.nzjday = origin.julday
+            sac_trace.nzhour = origin.hour
+            sac_trace.nzmin = origin.minute
+            sac_trace.nzsec = origin.second
+            sac_trace.nzmsec = origin.microsecond / 1000
             sac_trace.o = 0
             sac_trace.iztype = 'io'
 
             # SAC file lodation
-            sub_fldr_nm = starttime.strftime("%Y%m%d%H%M%S")
+            sub_fldr_nm = origin.strftime("%Y%m%d%H%M%S")
             sac_loc = os.path.join(self.sacdir, sub_fldr_nm)
             if not os.path.exists(sac_loc):
                 os.mkdir(sac_loc)
-            sac_flnm = ".".join([starttime.strftime("%Y.%j.%H.%M.%S"),
+            sac_flnm = ".".join([origin.strftime("%Y.%j.%H.%M.%S"),
                                  "0000", trace.id, "M", "SAC"])
             sac_fullname = os.path.join(sac_loc, sac_flnm)
             sac_trace.write(sac_fullname)
         return
 
     def get_waveform(self, event, duration):
-        dirnames = self._get_dirname(event["starttime"], duration)
+        dirnames = self._get_dirname(event["origin"], duration)
         # check if folders exists
         for dirname in dirnames:
             if not os.path.exists(os.path.join(self.mseeddir, dirname)):
@@ -183,7 +183,7 @@ class Client(object):
                 return
         for station in self.stations:    # loop over all stations
             st = self._read_mseed(
-                station, dirnames, event["starttime"], duration)
+                station, dirnames, event["origin"], duration)
             # Reading error
             if not st:
                 continue
@@ -200,9 +200,9 @@ def read_catalog(catalog):
 
     events = []
     for line in lines:
-        starttime, latitude, longitude, depth, magnitude = line.split()[0:5]
+        origin, latitude, longitude, depth, magnitude = line.split()[0:5]
         event = {
-            "starttime": UTCDateTime(starttime),
+            "origin": UTCDateTime(origin),
             "latitude": float(latitude),
             "longitude": float(longitude),
             "depth": float(depth),
