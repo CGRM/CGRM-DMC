@@ -191,24 +191,22 @@ class Client(object):
 
 
 def read_catalog(catalog):
-    """
+    '''
     Read event catalog.
-    """
-
-    with open(catalog) as f:
-        lines = f.readlines()
+    '''
 
     events = []
-    for line in lines:
-        origin, latitude, longitude, depth, magnitude = line.split()[0:5]
-        event = {
-            "origin": UTCDateTime(origin),
-            "latitude": float(latitude),
-            "longitude": float(longitude),
-            "depth": float(depth),
-            "magnitude": float(magnitude),
-        }
-        events.append(event)
+    with open(catalog) as f:
+        for line in f:
+            origin, latitude, longitude, depth, magnitude = line.split()[0:5]
+            event = {
+                "origin": UTCDateTime(origin),
+                "latitude": float(latitude),
+                "longitude": float(longitude),
+                "depth": float(depth),
+                "magnitude": float(magnitude),
+            }
+            events.append(event)
     return events
 
 
