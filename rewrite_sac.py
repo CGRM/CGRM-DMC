@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # -*- coding:utf8 -*-
 
 import os
@@ -9,7 +9,7 @@ import subprocess as sp
 os.putenv("SAC_DISPLAY_COPYRIGHT", '0')
 
 if len(sys.argv) == 1:
-    sys.exit("Usage: python dirname")
+    sys.exit("Usage: python {} dirname".format(sys.argv[0]))
 
 for event in sys.argv[1:]:
     p = sp.Popen(['sac'], stdin=sp.PIPE)

@@ -23,7 +23,7 @@ Collection of scripts to help manage CGRM-DMC database.
 - `mseed2sac.py`: cut event data in SAC format from continuous waveform database
   in miniSEED format
 - `catalog2database.py`: convert [catalog_released.csv]() to [database.csv]()
-- `re-head.py`: read and rewrite SAC files to fix epicentral distance difference between obspy and SAC
+- `rewrite_sac.py`: read and rewrite SAC files to fix epicentral distance difference between obspy and SAC
 - `plot_event_map.pl`: distribution of events
 - `plot_station_map.sh`: distribution of stations
 
