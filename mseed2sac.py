@@ -247,9 +247,8 @@ class Client(object):
         start_offset = by_phase['start_offset']
         end_offset = by_phase['end_offset']
 
-        model = TauPyModel(self.model)
         # TauPyModel.get_travel_times always return sorted value
-        start_arrivals = model.get_travel_times(
+        start_arrivals = self.model.get_travel_times(
             source_depth_in_km=event['depth'],
             distance_in_degree=dist,
             phase_list=start_ref_phase)
@@ -362,4 +361,4 @@ if __name__ == '__main__':
             "end_offset": 200
         }
 
-        client.get_waveform(event, by_event=by_event, epicenter=epicenter)
+        client.get_waveform(event, by_event=by_event)
