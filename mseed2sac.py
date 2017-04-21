@@ -232,6 +232,7 @@ class Client(object):
         station: dict
             Contain information of station
         """
+
         if by_event:
             starttime = event['origin'] + by_event['start_offset']
             endtime = starttime + by_event['duration']
@@ -246,6 +247,7 @@ class Client(object):
         start_offset = by_phase['start_offset']
         end_offset = by_phase['end_offset']
 
+        model = TauPyModel(self.model)
         # TauPyModel.get_travel_times always return sorted value
         start_arrivals = model.get_travel_times(
             source_depth_in_km=event['depth'],
@@ -264,7 +266,7 @@ class Client(object):
         endtime = event['origin'] + end_arrivals[-1].time + end_offset
         return starttime, endtime
 
-    def get_waveform(self, event, by_event=None, by_phase=None):
+    def get_waveform(self, event, by_event=None, by_phase=None, epicenter=None):
         """
         Trim waveform from dataset of CGRM
 
@@ -276,6 +278,8 @@ class Client(object):
             Determine waveform window by event origin time
         by_phase: dict
             Determine waveform window by phase arrival times
+        epicenter: dict
+            Select station location
         """
         # check the destination
         eventdir = event['origin'].strftime("%Y%m%d%H%M%S")
@@ -298,6 +302,11 @@ class Client(object):
                                                       by_phase=by_phase)
                 dirnames = self._get_dirname(starttime, endtime)
                 logger.debug("dirnames: %s", dirnames)
+            if epicenter:
+                dist = locations2degrees(event["latitude"], event["longitude"],
+                                              station["stla"], station["stlo"])
+                if dist < epicenter['minimum'] or dist > epicenter['maximum']:
+                    continue
 
             st = self._read_mseed(station, dirnames, starttime, endtime)
             if not st:
@@ -339,6 +348,10 @@ if __name__ == '__main__':
                     model="prem")
 
     events = read_catalog("events.csv")
+    epicenter = {
+        "minimum": 30,
+        "maximum": 40
+    }
     for event in events:
         logger.info("origin: %s", event['origin'])
         by_event = {"start_offset": 0, "duration": 6000}
@@ -348,4 +361,5 @@ if __name__ == '__main__':
             "end_ref_phase": ['PcP'],
             "end_offset": 200
         }
-        client.get_waveform(event, by_event=by_event)
+
+        client.get_waveform(event, by_event=by_event, epicenter=epicenter)
