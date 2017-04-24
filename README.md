@@ -27,6 +27,16 @@ Collection of scripts to help manage CGRM-DMC database.
 - `plot_event_map.pl`: distribution of events
 - `plot_station_map.sh`: distribution of stations
 
+## Data Release Notes
+
+1.  Move data to `/data/Level1`
+2.  Add event catalog to `catalog_realeased.csv`
+3.  Run `catalog2database.csv` to generate `database.csv`
+4.  Run `plot_event_map.pl` to generate event map
+5.  Update SQL database with the lastest `database.csv`
+6.  Update event map on web
+7.  Send email notification and add news on web
+
 ## History
 
 - 20170408: verify the trimed result and chunk events multiprocessing
