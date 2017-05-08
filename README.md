@@ -31,7 +31,7 @@ Collection of scripts to help manage CGRM-DMC database.
 
 1.  Move data to `/data/Level1`
 2.  Add event catalog to `catalog_realeased.csv`
-3.  Run `catalog2database.csv` to generate `database.csv`
+3.  Run `catalog2database.py` to generate `database.csv`
 4.  Run `plot_event_map.pl` to generate event map
 5.  Update SQL database with the lastest `database.csv`
 6.  Update event map on web
