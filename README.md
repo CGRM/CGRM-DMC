@@ -13,16 +13,16 @@ Collection of scripts to help manage CGRM-DMC database.
 
 ### Data
 
-- [catalog_released.csv](catalog_released.csv): event catalog used in scripts
-- [database.csv](database.csv): event catalog used in SQL database
+- [catalog_released.csv](./catalog_released.csv): event catalog used in scripts
+- [database.csv](./database.csv): event catalog used in SQL database
 - [station.info](): station information (**Confidential data!!!**)
-- [CN-border-La.dat](./CN-border-LA.dat): China boundary used in [plot_event_map.pl](./plot_event_map.pl) and [plot_station_map.sh](plot_station_map.sh)
+- [CN-border-La.dat](./CN-border-La.dat): China boundary used in [plot_event_map.pl](./plot_event_map.pl) and [plot_station_map.sh](./plot_station_map.sh)
 
 ### scripts
 
 - `mseed2sac.py`: cut event data in SAC format from continuous waveform database
   in miniSEED format
-- `catalog2database.py`: convert [catalog_released.csv]() to [database.csv]()
+- `catalog2database.py`: convert [catalog_released.csv](./catalog_released.csv) to [database.csv](./database.csv)
 - `rewrite_sac.py`: read and rewrite SAC files to fix epicentral distance difference between obspy and SAC
 - `plot_event_map.pl`: distribution of events
 - `plot_station_map.sh`: distribution of stations
