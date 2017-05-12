@@ -16,7 +16,7 @@ Collection of scripts to help manage CGRM-DMC database.
 - [catalog_released.csv](catalog_released.csv): event catalog used in scripts
 - [database.csv](database.csv): event catalog used in SQL database
 - [station.info](): station information (**Confidential data!!!**)
-- [CN-border-La.dat](CN-border-LA.dat): China boundary used in [plot_event_map.pl](plot_event_map.pl) and [plot_station_map.sh](plot_station_map.sh)
+- [CN-border-La.dat](./CN-border-LA.dat): China boundary used in [plot_event_map.pl](./plot_event_map.pl) and [plot_station_map.sh](plot_station_map.sh)
 
 ### scripts
 
