@@ -43,3 +43,4 @@ close(LEGEND);
 system "gmt psxy -J$J -R$R -T -O >> $PS";
 system "gmt psconvert -P -Tg $PS";
 unlink glob "gmt.*";
+unlink $PS;
