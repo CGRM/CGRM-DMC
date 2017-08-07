@@ -341,12 +341,12 @@ def read_catalog(catalog):
 
 
 if __name__ == '__main__':
-    client = Client(stationinfo="station.info",
+    client = Client(stationinfo="./info/station.info",
                     mseeddir="MSEED",
                     sacdir="SAC",
                     model="prem")
 
-    events = read_catalog("events.csv")
+    events = read_catalog("./info/events.csv")
     epicenter = {
         "minimum": 30,
         "maximum": 40

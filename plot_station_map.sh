@@ -11,7 +11,7 @@ gmt set FONT_TITLE 16p
 
 # 绘制中国地图
 gmt pscoast -J$J -R$R -G244/243/239 -S167/194/223 -B10f5g10 -B+t'Stations Distribution' -Lg85/17.5+c17.5+w800k+f+u+l'比例尺' -K > $PS
-gmt psxy CN-border-La.dat -J$J -R$R -W0.3p,gray50 -O -K >> $PS
+gmt psxy ./info/CN-border-La.dat -J$J -R$R -W0.3p,gray50 -O -K >> $PS
 gmt psxy station.info -J$J -R$R -St0.1c -Gred -i2,1 -K -O >> $PS
 
 # 绘制南海区域
