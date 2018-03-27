@@ -45,14 +45,14 @@ For example:
 
 
     |--- 20160103230522
-    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHE.M.mseed
-    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHN.M.mseed
-    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHZ.M.mseed
+    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHE.M.SAC
+    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHN.M.SAC
+    |    |-- 2016.003.23.05.22.0000.AH.ANQ.00.BHZ.M.SAC
     |    `-- ...
     |--- 20160105140322
-    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHE.M.mseed
-    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHN.M.mseed
-    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHZ.M.mseed
+    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHE.M.SAC
+    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHN.M.SAC
+    |    |-- 2016.005.14.03.22.0000.AH.ANQ.00.BHZ.M.SAC
     |    `-- ...
 """
 import os
@@ -63,10 +63,12 @@ from obspy import read, UTCDateTime, Stream
 from obspy.io.sac import SACTrace
 from obspy.taup import TauPyModel
 from obspy.geodetics import locations2degrees
+from tqdm import tqdm
 
 # Setup the logger
 FORMAT = "[%(asctime)s]  %(levelname)s: %(message)s"
 logging.basicConfig(
+    filename="logger.info"
     level=logging.DEBUG,
     format=FORMAT,
     datefmt='%Y-%m-%d %H:%M:%S'
@@ -89,17 +91,43 @@ class Client(object):
 
             NET.STA  latitude  longitude  elevation
         """
-        stations = []
+        stations = {} 
         with open(stationinfo, "r") as f:
             for line in f:
-                name, stla, stlo, stel = line.split()[0:4]
-                station = {"name": name,
-                           "stla": float(stla),
-                           "stlo": float(stlo),
-                           "stel": float(stel)
-                           }
-                stations.append(station)
-        logger.info("%d stations found.", len(stations))
+                name, stla, stlo, stel, starttime, endtime = line.split()[0:6]
+
+                # handle the time
+                try:
+                    starttime = UTCDateTime(starttime)
+                    endtime   = UTCDateTime(endtime)
+                except:
+                    starttime = UTCDateTime("20090101")
+                    endtime   = UTCDateTime("20500101")
+
+                if name not in stations.keys():
+                    station = {
+                               name: [{
+                                        "name": name,
+                                        "stla": float(stla),
+                                        "stlo": float(stlo),
+                                        "stel": float(stel) / 1000.0,
+                                        "starttime": starttime,
+                                        "endtime": endtime
+                                      }]
+                              }
+                    stations.update(station)
+                else:
+                    subdict=  {
+                                "name": name,
+                                "stla": float(stla),
+                                "stlo": float(stlo),
+                                "stel": float(stel) / 1000.0,
+                                "starttime": starttime,
+                                "endtime": endtime
+                              }
+                    stations[name].append(subdict)
+
+        logger.info("%d stations in database.", len(stations))
         return stations
 
     def _get_dirname(self, starttime, endtime):
@@ -293,8 +321,9 @@ class Client(object):
             logger.debug("dirnames: %s", dirnames)
 
         # loop over all stations
-        for station in self.stations:
-            logger.debug("station: %s", station['name'])
+        for key, stationlist in self.stations.items():
+            station = find_station(stationlist, event['origin'])
+            logger.debug("station: %s", key)
             if not by_event:
                 starttime, endtime = self._get_window(event=event,
                                                       station=station,
@@ -312,6 +341,26 @@ class Client(object):
                 continue
             self._writesac(st, event, station, outdir)
 
+def find_station(stationlist, time):
+    """Check the staion info. in a station list
+
+    Parameter
+    ---------
+
+    stationlist : list
+        list of all dict. which contain station location info. during a period 
+        of time
+    time : obspy.UTCDateTime
+        time to search for station information
+    """
+    for subdict in stationlist:
+        if subdict["starttime"] < time and subdict["endtime"] > time:
+            return subdict
+        else:
+            continue
+    # no staion info error
+    logger.info("No Info. during {}".format(time))
+    return None
 
 def read_catalog(catalog):
     '''
@@ -342,16 +391,16 @@ def read_catalog(catalog):
 
 if __name__ == '__main__':
     client = Client(stationinfo="./info/station.info",
-                    mseeddir="MSEED",
+                    mseeddir="/run/media/seispider/Seagate Backup Plus Drive/",
                     sacdir="SAC",
                     model="prem")
 
-    events = read_catalog("./info/events.csv")
+    events = read_catalog("./info/catalog_2017_6.5.csv")
     epicenter = {
         "minimum": 30,
         "maximum": 40
     }
-    for event in events:
+    for event in tqdm(events):
         logger.info("origin: %s", event['origin'])
         by_event = {"start_offset": 0, "duration": 6000}
         by_phase = {
