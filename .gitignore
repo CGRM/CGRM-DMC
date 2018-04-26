@@ -1,6 +1,8 @@
 *.pyc
+*.info
 __pycache__
 SAC
 /info/station.info
 MSEED
 /info/events.csv
+/info/station.revision.txt
